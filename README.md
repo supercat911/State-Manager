@@ -45,13 +45,18 @@ Outputs:
 ```
 > a is changed. Current value is 3, previous value was null
 a = 3, b = 10
+
 > b is changed. Current value is 10, previous value was null
 a = 3, b = 10
+
 > States are updated. a = 3, b = 10
+
 > a is changed. Current value is 15, previous value was 3
 a = 15, b = 20
+
 > b is changed. Current value is 20, previous value was 10
 a = 15, b = 20
+
 > States are updated. a = 15, b = 20
 ```
 
