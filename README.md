@@ -1,5 +1,5 @@
 # Supercat's StateManager
-Lightweight state management library 
+Lightweight state management javascript library 
 
 - Tiny (<2kb) – Too much lightweight, no more large bundle sizes
 - No dependences
@@ -11,7 +11,7 @@ import { StateManager } from './StateManager';
 
 let stateManager = new StateManager();
 
-// you can work with a proxy object of stateManager
+// You can work with a proxy object of stateManager
 let obj = stateManager.getProxy();
 
 // Automatically create and set a value for a new state
