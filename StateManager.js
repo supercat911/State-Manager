@@ -19,13 +19,13 @@ class State {
     #getter = null
     #value = null
     #name = ''
-    stateManager = null
+    #stateManager = null
 
-    constructor(name, value, stateManager = null) {
+    constructor(name = null, value = null, stateManager = null) {
         this.#name = name;
         this.#value = value;
         this.listeners = [];
-        this.stateManager = stateManager;
+        this.#stateManager = stateManager;
     }
 
     subscribe(callback) {
@@ -75,7 +75,7 @@ class State {
             return false;
         }
 
-        if (!this.stateManager) {
+        if (!this.#stateManager) {
 
             this.#value = newValue;
 
@@ -92,14 +92,14 @@ class State {
         else {
 
             if (!__force_write_flag) {
-                return this.stateManager.setStateValue(this.#name, newValue);
+                return this.#stateManager.setStateValue(this.#name, newValue);
             };
 
             this.#value = newValue;
 
             for (let i = 0; i < this.listeners.length; i++) {
                 let listener = this.listeners[i];
-                this.stateManager.__callbacksToRun.push([listener, newValue, previousValue]);
+                this.#stateManager.__callbacksToRun.push([listener, newValue, previousValue]);
             }
         }
 
@@ -281,4 +281,4 @@ class StateManager extends EventEmitter {
 
 }
 
-export { StateManager };
+export { State, StateManager };
