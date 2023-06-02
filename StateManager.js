@@ -213,6 +213,10 @@ class StateManager extends EventEmitter {
         this.#setTimeoutId = 0;
         this.#shouldered_tasks = {}
 
+        if (changed_state_names.length > 0) {
+            this.emit('batch', changed_state_names);
+        }
+
         for (let i = 0; i < this.__callbacksToRun.length; i++) {
             let callback_data = this.__callbacksToRun[i];
             try {
@@ -224,10 +228,6 @@ class StateManager extends EventEmitter {
         }
 
         this.__callbacksToRun = [];
-
-        if (changed_state_names.length > 0) {
-            this.emit('batch', changed_state_names);
-        }
     }
 
     waitForTasksToComplete() {
