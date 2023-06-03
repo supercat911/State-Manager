@@ -130,6 +130,112 @@ console.log(stateManager2.getStateValue("a"));
 // Outputs 5
 ```
 
+## State API 
+
+A state object can be created with a StateManager instance.
+```js
+import { StateManager } from './StateManager';
+let stateManager = new StateManager();
+let myState = stateManager.createState();
+
+let state_name  = "myState2";
+let init_value  = "123";
+
+let myState2 = stateManager.createState(state_name, init_value); 
+
+```
+
+### Properties
+#### `state.value`
+> State's value. Uses the getter state.getValue and the setter state.setValue
+
+#### `state.name`
+> State's name (id). Readonly. The state's name can be set when creating the state.
+
+
+### Methods
+#### `state.setValue(newValue)`
+> Sets state's value in asynchronous mode. 
+> Returns true or false.
+
+#### `state.getValue()`
+> Returns the value of state. 
+
+#### `state.getName()`
+> Returns the name of state. 
+
+#### `state.subscribe(callback)`
+> Subscribes a callback to the data changes. Returns callback.
+
+```js
+import { StateManager } from './StateManager';
+
+let stateManager = new StateManager();
+let myState = stateManager.createState();
+
+myState.subscribe((newValue, previousValue) => {
+    console.log("newValue: " + newValue, "previousValue: " + previousValue);
+});
+```
+
+#### `state.unsubscribe(callback)`
+> Unsubscribes a callback.
+
+```js
+import { StateManager } from './StateManager';
+
+let stateManager = new StateManager();
+let myState = stateManager.createState();
+
+function callback(newValue, previousValue) {
+    console.log("newValue: " + newValue, "previousValue: " + previousValue);
+}
+
+myState.subscribe(callback);
+myState.setValue(5);
+
+await stateManager.waitForTasksToComplete();
+
+myState.unsubscribe(callback);
+myState.setValue(6);
+
+await stateManager.waitForTasksToComplete();
+
+console.log(myState.getValue());
+```
+
+#### `state.unsubscribeAll()`
+> Unsubscribes all callbacks.
+
+#### `state.setGetter(callback)`
+> Sets getter for state.
+```js
+import { StateManager } from './StateManager';
+
+let stateManager = new StateManager();
+
+let a = stateManager.createState();
+let b = stateManager.createState();
+let c = stateManager.createState();
+
+a.value = 3;
+b.value = 2;
+
+function getter() {
+    return a.value + b.value;
+}
+
+c.setGetter(getter);
+
+await stateManager.waitForTasksToComplete();
+console.log(c.value);
+// outputs 5;
+```
+
+#### `state.clearGetter()`
+> Deletes the getter for state.
+
+
 ## StateManager API 
 
 ### Methods
@@ -270,108 +376,3 @@ await stateManager.waitForTasksToComplete();
 a.setValue(15);
 b.setValue(20);
 ```
-
-## State API 
-
-A state object can be created with a StateManager instance.
-```js
-import { StateManager } from './StateManager';
-let stateManager = new StateManager();
-let myState = stateManager.createState();
-
-let state_name  = "myState2";
-let init_value  = "123";
-
-let myState2 = stateManager.createState(state_name, init_value); 
-
-```
-
-### Properties
-#### `state.value`
-> State's value. Uses the getter state.getValue and the setter state.setValue
-
-#### `state.name`
-> State's name (id). Readonly. The state's name can be set when creating the state.
-
-
-### Methods
-#### `state.setValue(newValue)`
-> Sets state's value in asynchronous mode. 
-> Returns true or false.
-
-#### `state.getValue()`
-> Returns the value of state. 
-
-#### `state.getName()`
-> Returns the name of state. 
-
-#### `state.subscribe(callback)`
-> Subscribes a callback to the data changes. Returns callback.
-
-```js
-import { StateManager } from './StateManager';
-
-let stateManager = new StateManager();
-let myState = stateManager.createState();
-
-myState.subscribe((newValue, previousValue) => {
-    console.log("newValue: " + newValue, "previousValue: " + previousValue);
-});
-```
-
-#### `state.unsubscribe(callback)`
-> Unsubscribes a callback.
-
-```js
-import { StateManager } from './StateManager';
-
-let stateManager = new StateManager();
-let myState = stateManager.createState();
-
-function callback(newValue, previousValue) {
-    console.log("newValue: " + newValue, "previousValue: " + previousValue);
-}
-
-myState.subscribe(callback);
-myState.setValue(5);
-
-await stateManager.waitForTasksToComplete();
-
-myState.unsubscribe(callback);
-myState.setValue(6);
-
-await stateManager.waitForTasksToComplete();
-
-console.log(myState.getValue());
-```
-
-#### `state.unsubscribeAll()`
-> Unsubscribes all callbacks.
-
-#### `state.setGetter(callback)`
-> Sets getter for state.
-```js
-import { StateManager } from './StateManager';
-
-let stateManager = new StateManager();
-
-let a = stateManager.createState();
-let b = stateManager.createState();
-let c = stateManager.createState();
-
-a.value = 3;
-b.value = 2;
-
-function getter() {
-    return a.value + b.value;
-}
-
-c.setGetter(getter);
-
-await stateManager.waitForTasksToComplete();
-console.log(c.value);
-// outputs 5;
-```
-
-#### `state.clearGetter()`
-> Deletes the getter for state.
