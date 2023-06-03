@@ -3,6 +3,7 @@ Lightweight state management javascript library
 
 - Tiny - Too much lightweight, no more large bundle sizes
 - Automatic Batching
+- Reactive
 
 Here's the first example to get you started.
 ```js
@@ -353,23 +354,23 @@ console.log(myState.getValue());
 import { StateManager } from './StateManager';
 
 let stateManager = new StateManager();
-let myState = stateManager.createState();
 
-function callback(newValue, previousValue) {
-    console.log("newValue: " + newValue, "previousValue: " + previousValue);
-}
+let a = stateManager.createState();
+let b = stateManager.createState();
+let c = stateManager.createState();
+
+a.value = 3;
+b.value = 2;
 
 function getter() {
-    return 0;
+    return a.value + b.value;
 }
 
-myState.subscribe(callback);
-myState.setGetter(getter);
-myState.setValue(5);
+c.setGetter(getter);
 
 await stateManager.waitForTasksToComplete();
-console.log(myState.getValue());
-// outputs 0;
+console.log(c.value);
+// outputs 5;
 ```
 
 #### `state.clearGetter()`
