@@ -277,6 +277,12 @@ A state object can be created with a StateManager instance.
 import { StateManager } from './StateManager';
 let stateManager = new StateManager();
 let myState = stateManager.createState();
+
+let state_name  = "myState2";
+let init_value  = "123";
+
+let myState2 = stateManager.createState(state_name, init_value); 
+
 ```
 
 ### Properties
