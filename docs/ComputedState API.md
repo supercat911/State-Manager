@@ -81,3 +81,44 @@ myState.subscribe((previousValue, newValue) => {
 
 #### `state.recompute()`
 > Recompute state's value.
+
+
+### Example using computed states with proxy object
+
+```js
+import { StateManager } from "./js/StateManager.js";
+
+let sm = new StateManager();
+let states = sm.getProxy();
+
+let a = sm.createState("a");
+let b = sm.createState("b");
+
+function compute_d() {
+    console.log("compute value of d");
+    return a.value + b.value;
+}
+
+let d = sm.createComputed("d", compute_d, [a, b]);
+
+function callback(previousValue, newValue) {
+    console.log("d is changed", "newValue = " + newValue, "previousValue = " + previousValue);
+}
+
+d.subscribe(callback);
+
+
+states.a = 3;
+states.b = 2;
+
+await sm.waitForTasksToComplete();
+
+console.log("get value of d 3 times");
+console.log(states.d);
+console.log(states.d);
+console.log(states.d);
+
+states.b++; 
+
+await sm.waitForTasksToComplete();
+```
