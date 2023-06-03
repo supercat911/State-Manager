@@ -11,7 +11,7 @@ import { StateManager } from './StateManager';
 let stateManager = new StateManager();
 
 stateManager.on("batch", (updated_state_names) => {
-    console.log(`States are updated. a = ${a.getValue()}, b = ${b.getValue()}`);
+    console.log(`States are updated. a = ${a.value}, b = ${b.value}`);
 });
 
 let a = stateManager.createState();
@@ -20,24 +20,24 @@ let b = stateManager.createState();
 a.subscribe((newValue, previousValue) => {
     console.log(
         `a is changed. Current value is ${newValue}, previous value was ${previousValue}
-a = ${a.getValue()}, b = ${b.getValue()}`);
+a = ${a.value}, b = ${b.value}`);
 
 });
 
 b.subscribe((newValue, previousValue) => {
     console.log(
         `b is changed. Current value is ${newValue}, previous value was ${previousValue}
-a = ${a.getValue()}, b = ${b.getValue()}`);
+a = ${a.value}, b = ${b.value}`);
 });
 
-a.setValue(2);
-a.setValue(3);
-
-b.setValue(10);
+a.value = 2;
+a.value = 3;
+b.value = 10; //or use b.setValue(10);
 
 await stateManager.waitForTasksToComplete();
-a.setValue(15);
-b.setValue(20);
+
+a.value = 15;
+b.value = 20;
 
 ```
 
@@ -166,9 +166,10 @@ stateManager.createState("a", 1);
 let stateManager = new StateManager();
 
 stateManager.subscribe("a", (newValue, previousValue) => {
-    console.log("Method 1");
     console.log("newValue: " + newValue, "previousValue: " + previousValue);
 });
+
+stateManager.setStateValue("a", 5);
 ```
 
 #### `stateManager.unsubscribe(state_name, callback)`
@@ -277,6 +278,14 @@ import { StateManager } from './StateManager';
 let stateManager = new StateManager();
 let myState = stateManager.createState();
 ```
+
+### Properties
+#### `state.value`
+> State's value. Uses the getter state.getValue and the setter state.setValue
+
+#### `state.name`
+> State's name (id). Readonly. The state's name can be set when creating the state.
+
 
 ### Methods
 #### `state.setValue(newValue)`
