@@ -100,5 +100,33 @@ console.log(c.value);
 // outputs 5;
 ```
 
-#### `state.clearGetter()`
+#### `state.setGetter()`
 > Deletes the getter for state.
+
+
+#### `state.setGetter(setter)`
+> Sets getter for state.
+
+```js
+import { StateManager } from "./js/StateManager.js";
+
+let sm = new StateManager();
+
+let a = sm.createState();
+
+a.value = 1;
+a.value = 2;
+
+function setter(value) {
+    return value * 2;
+}
+
+a.setSetter(setter);
+
+await sm.waitForTasksToComplete();
+console.log(a.value);
+// outputs 4;
+```
+
+#### `state.clearSetter()`
+> Deletes the setter for state.

@@ -15,6 +15,8 @@ function compareObjects(a, b) {
 class State {
 
     #getter = null
+    #setter = null
+
     #value = null
     #name = ''
     #stateManager = null
@@ -82,6 +84,14 @@ class State {
         this.#getter = null;
     }
 
+    setSetter(func) {
+        this.#setter = func;
+    }
+
+    clearSetter() {
+        this.#setter = null;
+    }
+
     getValue() {
         if (this.#getter) {
             this.#value = this.#getter();
@@ -96,6 +106,8 @@ class State {
 
     setValue(newValue, __force_write_flag = false) {
         let previousValue = this.#value;
+
+        if (this.#setter) newValue = this.#setter(newValue);
 
         if (compareObjects(previousValue, newValue)) {
             return false;
