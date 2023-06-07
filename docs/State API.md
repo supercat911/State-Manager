@@ -29,6 +29,60 @@ let myState2 = sm.createState(state_name, init_value);
 #### `state.getValue()`
 > Returns the value of state. 
 
+#### `state.getDirtyValue()`
+> Returns the "dirty" value of state. 
+```js
+import { StateManager } from "./js/StateManager.js";
+
+let sm = new StateManager();
+
+let a = sm.createState("a", 1);
+
+a.subscribe((previousValue, newValue) => {
+    console.log(`a is changed. Current value is ${newValue}, previous value was ${previousValue}`);
+});
+
+a.value = 2;
+console.log(`value = ${a.getValue()} , dirty value = ${a.getDirtyValue()}` );
+```
+
+Another example
+```js
+import { StateManager } from "./js/StateManager.js";
+
+let sm = new StateManager();
+
+let a = sm.createState("a", [1, 2, 3]);
+let b = sm.createState("b", [1, 2, 3]);
+
+b.dirtyMode = true;
+
+try {
+    a.value.push(1);
+    a.value.push(1);
+    a.value.push(1);    
+}
+catch (e) {
+    console.error(e);
+}
+
+b.value.push(1);
+b.value.push(1);
+b.value.push(1);
+
+console.log(`a: value = ${a.getValue()} , dirty value = ${a.getDirtyValue()}` );
+console.log(`b: value = ${b.getValue()} , dirty value = ${b.getDirtyValue()}` );
+```
+
+```
+> TypeError: Cannot add property 3, object is not extensible
+    at Array.push (<anonymous>)
+    at main.js:11:13
+(anonymous) @ main.js:16
+> a: value = 1,2,3 , dirty value = 1,2,3
+> b: value = 1,2,3,1,1,1 , dirty value = 1,2,3,1,1,1
+```
+
 #### `state.getName()`
 > Returns the name of state. 
 

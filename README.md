@@ -32,9 +32,10 @@ b.subscribe((previousValue, newValue) => {
 a = ${a.value}, b = ${b.value}`);
 });
 
+// remembers only the last change of the state value
 a.value = 2;
 a.value = 3;
-b.value = 10; //or use b.setValue(10);
+b.value = 10; //or you can use b.setValue(10);
 
 await sm.waitForTasksToComplete();
 
@@ -89,7 +90,7 @@ b.value = 2;
 
 await sm.waitForTasksToComplete();
 
-console.log("get value of d 3 times");
+console.log("Get a value of d 3 times. The value of D is not recomputed.");
 console.log(d.value);
 console.log(d.value);
 console.log(d.value);
@@ -97,10 +98,21 @@ console.log(d.value);
 b.value++; 
 
 await sm.waitForTasksToComplete();
-
 ```
 
-You can use StateManager to work with proxy objects
+Outputs:
+```
+> compute value of d
+> d is changed newValue = 5 previousValue = null
+> Get a value of d 3 times. The value of D is not recomputed.
+> 5
+> 5
+> 5
+> compute value of d
+> d is changed newValue = 6 previousValue = 5
+```
+
+You can use StateManager to work with proxy objects. 
 ```js
 import { StateManager } from "./js/StateManager.js";
 
@@ -113,14 +125,14 @@ let states = sm.getProxy();
 states.a = 1;
 
 // Subscribe to the data changes.
-sm.subscribe("a", (previousValue, newValue) => {
+sm.subscribe("a", (previousValue, newValue, state) => {
     console.log("Method 1");
-    console.log("newValue: " + newValue, "previousValue: " + previousValue);
+    console.log(`${state.name} is changed`, "newValue: " + newValue, "previousValue: " + previousValue);
 });
 
-sm.subscribe("a", (previousValue, newValue) => {
+sm.subscribe("a", (previousValue, newValue, state) => {
     console.log("Method 2");
-    console.log("newValue: " + newValue, "previousValue: " + previousValue);
+    console.log(`${state.name} is changed`, "newValue: " + newValue, "previousValue: " + previousValue);
 });
 
 // Set state's value in asynchronous mode
@@ -136,36 +148,49 @@ console.log(states.a);
 // Outputs 5
 ```
 
-Also you can use native StateManager's API
+Also you can work with values in "dirty mode"
 ```js
 import { StateManager } from "./js/StateManager.js";
 
 let sm = new StateManager();
 
-// Subscribe to the data changes.
-sm.subscribe("a", (previousValue, newValue) => {
-    console.log("Method 1");
-    console.log("newValue: " + newValue, "previousValue: " + previousValue);
+sm.on("batch", (updated_state_names) => {
+    console.log(`States are updated. a = ${a.value}, b = ${b.value}`);
 });
 
-sm.subscribe("a", (previousValue, newValue) => {
-    console.log("Method 2");
-    console.log("newValue: " + newValue, "previousValue: " + previousValue);
+let initValue = 1;
+
+// creates a state and sets a name (id) for the state 
+let a = sm.createState("a", initValue);
+let b = sm.createState("b", initValue);
+
+a.subscribe((previousValue, newValue, state) => {
+    console.log(`${state.name} is changed. Current value is ${newValue}, previous value was ${previousValue}`);
 });
 
-// Create new state
-sm.createState("a", 1);
-sm.setStateValue("a", 2);
-sm.setStateValue("a", 3);
-sm.setStateValue("a", 4);
-sm.setStateValue("a", 5);
+b.subscribe((previousValue, newValue, state) => {
+    console.log(`${state.name} is changed. Current value is ${newValue}, previous value was ${previousValue}`);
+});
 
-console.log(sm.getStateValue("a"));
-// Outputs 1
+// sets to "dirty value" only the last change of the state value
+a.value++;
+// console.log(a.value); // outputs "1"
+a.value++;
+// console.log(a.value); // outputs "1"
+a.value++;
+// console.log(a.value); // outputs "1"
 
-await sm.waitForTasksToComplete();
-console.log(sm.getStateValue("a"));
-// Outputs 5
+b.dirtyMode = true;  
+
+// now state value changes in intermediate calculations
+b.value++;
+// console.log(a.value); // outputs "2"
+b.value++;
+// console.log(a.value); // outputs "3"
+b.value++;
+// console.log(a.value); // outputs "4"
+
+console.log(`Values: ${a.value}, ${b.value}`);
 ```
 
 Docs and examples you can find in "docs" folder. 

@@ -1,28 +1,35 @@
 import { EventEmitter } from "./EventEmitter.js";
 import { State } from "./State.js";
-import {ComputedState} from "./ComputedState.js";
+import { ComputedState } from "./ComputedState.js";
 
 class StateManager extends EventEmitter {
     delayMs = 16
 
     #states = {}
     #computed_states = {};
-    #shouldered_tasks = {}
+    #states_to_update = new Map()
     #setTimeoutId = 0
     #proxyObject = null
-    __callbacksToRun = []
     #statesIndex = 0;
 
     stateExists(state_name) {
         return !!this.#states[state_name];
     }
 
+    #generateName() {
+        let state_name = `unnamed_${this.#statesIndex}`;
+        this.#statesIndex++;
+
+        return state_name;
+    }
+
+    getStates() {
+        return this.#states;
+    }
+
     createState(state_name = null, value = null) {
 
-        if (state_name === null) {
-            state_name = `unnamed_${this.#statesIndex}`;
-            this.#statesIndex++;
-        }
+        state_name = state_name || this.#generateName();
 
         if (this.stateExists(state_name)) {
             console.error(`State ${state_name} has been declarated already`);
@@ -36,10 +43,7 @@ class StateManager extends EventEmitter {
 
     createComputed(state_name, setterFunction, dependencies) {
 
-        if (state_name === null) {
-            state_name = `unnamed_${this.#statesIndex}`;
-            this.#statesIndex++;
-        }
+        state_name = state_name || this.#generateName();
 
         if (this.stateExists(state_name)) {
             console.error(`State ${state_name} has been declarated already`);
@@ -62,25 +66,11 @@ class StateManager extends EventEmitter {
         return this.#states[state_name];
     };
 
-    getStateValue(state_name) {
-        let state = this.getState(state_name);
-        if (state == false) return false;
+    addTask(method, state_name) {
 
-        return state.getValue();
-    }
-
-    setStateValueImmediately(state_name, newValue) {
-        let state = this.getState(state_name);
-        if (state == false) return false;
-
-        if (state.isComputed) return false;
-
-        delete this.#shouldered_tasks[state_name];
-        return state.setValue(newValue, true);
-    }
-
-    #addTask(state_name, newValue){
-        this.#shouldered_tasks[state_name] = newValue;
+        if (method == "update") {
+            this.#states_to_update.set(state_name);
+        }
 
         if (this.#setTimeoutId == 0) {
             let that = this;
@@ -90,35 +80,8 @@ class StateManager extends EventEmitter {
         }
     }
 
-    setStateValue(state_name, newValue) {
-        let state = this.getState(state_name);
-        if (state == false) return false;
-        if (state.isComputed) return false;
-
-        this.#addTask(state_name, newValue);
-
-        return true;
-    }
-
-    subscribe(state_name, callback) {
-        let state = this.#states[state_name];
-        if (!state) state = this.createState(state_name, null);
-
-        return state.subscribe(callback);
-    }
-
-    unsubscribe(state_name, callback) {
-        let state = this.getState(state_name);
-        if (state == false) return false;
-
-        return state.unsubscribe(callback);
-    }
-
-    unsubscribeAll(state_name) {
-        let state = this.getState(state_name);
-        if (state == false) return false;
-
-        return state.unsubscribeAll();
+    deleteTask(state_name) {
+        this.#states_to_update.delete(state_name);
     }
 
     #completeTasks() {
@@ -126,16 +89,18 @@ class StateManager extends EventEmitter {
 
         // operate writable states
 
-        for (let state_name in this.#shouldered_tasks) {
-            let newValue = this.#shouldered_tasks[state_name];
-            let is_changed = this.setStateValueImmediately(state_name, newValue);
+        this.#states_to_update.forEach((value, state_name, map) => {
+
+            let is_changed = this.#states[state_name].forceUpdate();
+            this.deleteTask(state_name);
+
             if (is_changed) {
                 changed_state_names.push(state_name);
             }
-        }
+
+        });
 
         this.#setTimeoutId = 0;
-        this.#shouldered_tasks = {}
 
         // operate computed states
         if (changed_state_names.length > 0) {
@@ -145,7 +110,6 @@ class StateManager extends EventEmitter {
             for (let computed_state_name in this.#computed_states) {
 
                 let computed_state = this.#computed_states[computed_state_name];
-                
                 let updated = computed_state.recompute(changed_state_names);
 
                 if (updated) {
@@ -153,20 +117,15 @@ class StateManager extends EventEmitter {
                 }
             }
 
-            this.emit('batch', updated_computed_states.concat(changed_state_names) );
-        }
+            let all_updated_states = [].concat(updated_computed_states, changed_state_names);
 
-        for (let i = 0; i < this.__callbacksToRun.length; i++) {
-            let callback_data = this.__callbacksToRun[i];
-            try {
-                callback_data[0](callback_data[1], callback_data[2]);
-            }
-            catch (e) {
-                console.error(e);
-            }
-        }
+            this.emit('batch', all_updated_states);
 
-        this.__callbacksToRun = [];
+            for (let i = 0; i < all_updated_states.length; i++) {
+                this.getState(all_updated_states[i]).runSubscribers();
+            }
+
+        }
 
     }
 
@@ -196,6 +155,36 @@ class StateManager extends EventEmitter {
         }
 
         return this.#proxyObject;
+    }
+
+    subscribe(state_name, callback) {
+        let state = this.#states[state_name];
+        if (!state) state = this.createState(state_name, null);
+
+        return state.subscribe(callback);
+    }
+
+    unsubscribe(state_name, callback) {
+        let state = this.getState(state_name);
+        if (state == false) return false;
+
+        return state.unsubscribe(callback);
+    }
+
+    getStateValue(state_name) {
+        let state = this.getState(state_name);
+        if (state == false) return false;
+
+        return state.getValue();
+    }
+
+    setStateValue(state_name, newValue) {
+        let state = this.getState(state_name);
+        if (state == false) return false;
+        if (state.isComputed) return false;
+
+        state.setValue(newValue);
+        return true;
     }
 
     #createProxy() {

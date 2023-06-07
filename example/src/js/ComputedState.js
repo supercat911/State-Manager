@@ -1,22 +1,24 @@
 class ComputedState {
     #value = null
-    #name = ''
     value = null
+    #name = ''
+    name = ""
+
     #setterFunction = null
     #dependencies = []
-    #stateManager = null
+    stateManager = null
+    #listeners = []
+    #previousValue = null
 
     constructor(name = null, setterFunction, dependencies = [], stateManager) {
         this.#name = name;
         this.#value = null;
-        this.listeners = [];
+        this.#previousValue = null;
+        this.#listeners = [];
         this.#setterFunction = setterFunction;
-        this.#stateManager = stateManager;
-        this.#dependencies = dependencies.filter(state=>state.isComputed == false).map(state=>state.name);
+        this.stateManager = stateManager;
 
-        if (this.#dependencies.length != dependencies.length) {
-            console.error(`Computed states are ignored`);
-        }
+        this.#loadDependencies(dependencies);
 
         let that = this;
         Object.defineProperty(this, "value", {
@@ -29,6 +31,7 @@ class ComputedState {
 
         Object.defineProperty(this, "name", {
             value: that.getName(),
+            writable: false,
             enumerable: true,
             configurable: true,
         });
@@ -42,15 +45,33 @@ class ComputedState {
 
     }
 
+    #loadDependencies(dependencies = []) {
+        let result = [];
+
+        for (let i = 0; i < dependencies.length; i++) {
+                
+                let state = typeof dependencies[i] == "string"? this.stateManager.getState(dependencies[i]): dependencies[i];
+                
+                if (state.isComputed == false) {
+                    result.push(state.getName());
+                }
+                else {
+                    console.error(`Computed state has been ignored: ${state.getName()}`);
+                }
+        }
+
+        this.#dependencies = result;
+    }
+
     subscribe(callback) {
-        this.listeners.push(callback);
+        this.#listeners.push(callback);
         return callback;
     }
 
     unsubscribe(callback) {
-        for (let i = 0; i < this.listeners.length; i++) {
-            if (this.listeners[i] === callback) {
-                this.listeners.splice(i, 1);
+        for (let i = 0; i < this.#listeners.length; i++) {
+            if (this.#listeners[i] === callback) {
+                this.#listeners.splice(i, 1);
                 return true;
             }
         }
@@ -58,7 +79,19 @@ class ComputedState {
     }
 
     unsubscribeAll() {
-        this.listeners = [];
+        this.#listeners = [];
+    }
+
+    runSubscribers() {
+        for (let i = 0; i < this.#listeners.length; i++) {
+            let listener = this.#listeners[i];
+            try {
+                listener(this.#previousValue, this.#value, this);
+            }
+            catch (e) {
+                console.error(e);
+            }
+        }
     }
 
     getValue() {
@@ -75,49 +108,30 @@ class ComputedState {
 
         let deps = this.#dependencies;
         let recomputeFlag = false;
-        
-        for (let i=0; i<deps.length; i++) {
-            if (changed_state_names.indexOf(deps[i])!=-1) {
+
+        for (let i = 0; i < deps.length; i++) {
+            if (changed_state_names.indexOf(deps[i]) != -1) {
                 recomputeFlag = true;
                 break;
             }
         }
 
-        let previousValue = this.#value;
-        let newValue = previousValue; 
         let updated = false;
+        let newValue = this.#value;
 
         if (recomputeFlag) {
-            newValue = this.#setterFunction(previousValue);
-            updated = previousValue != newValue;
+            newValue = this.#setterFunction(this.#value);
         }
+
+        updated = this.#value != newValue;
 
         if (!updated) return false;
 
-        this.#value = newValue;
+        this.#previousValue = this.#value;
+        this.#value = Object.freeze(newValue);
 
-        if (!this.#stateManager) {
-
-            for (let i = 0; i < this.listeners.length; i++) {
-                let listener = this.listeners[i];
-                try {
-                    listener(previousValue, newValue);
-                }
-                catch (e) {
-                    console.error(e);
-                }
-            }
-        }
-        else {
-                
-            for (let i = 0; i < this.listeners.length; i++) {
-                let listener = this.listeners[i];
-                this.#stateManager.__callbacksToRun.push([listener, previousValue, newValue]);
-            }
-        }
-        
         return true; // updated
     }
 }
 
-export {ComputedState};
+export { ComputedState };
