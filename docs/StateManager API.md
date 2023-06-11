@@ -1,14 +1,75 @@
 ## StateManager API 
 
 ### Methods
-#### `stateManager.createState(state_name = null, value = null)`
+#### `stateManager.createState(value = null)`
+> Creates new state and sets initial value. Returns state object.
+> If state_name is null the name of state will be generated automatically
+
+#### `stateManager.createNamedState(state_name, value = null)`
 > Creates new state and sets initial value. Returns state object.
 > If state_name is null the name of state will be generated automatically
 
 ```js
+import { StateManager } from "./js/StateManager.js";
 let sm = new StateManager();
-sm.createState("a", 1);
+
+let init_value  = "123";
+
+let myState = sm.createState(init_value); 
+
+// also you can state name and initial value
+let state_name  = "myState2";
+let myState2 = sm.createNamedState(state_name, init_value); 
+
 ```
+
+#### `stateManager.createComputed(value = null, dependecies)`
+> Creates new computed state, sets getter and state dependecies. Returns state object.
+> State's name will be generated automatically
+
+#### `stateManager.createNamedComputed(state_name = null, value = null, dependecies)`
+> Creates new computed state with name. Returns state object.
+> If state_name is null the name of state will be generated automatically
+
+```js
+import { StateManager } from "./js/StateManager.js";
+
+let sm = new StateManager();
+window.sm = sm;
+
+let a = sm.createState(1);
+let b = sm.createState(2);
+
+function compute_d() {
+    console.log("compute value of d");
+    return a.value + b.value;
+}
+
+let d = sm.createComputed(compute_d, [a, b]);
+
+function callback(previousValue, newValue) {
+    console.log("d is changed", "newValue = " + newValue, "previousValue = " + previousValue);
+}
+
+d.subscribe(callback);
+
+
+a.value = 3;
+b.value = 2;
+
+await sm.waitForTasksToComplete();
+
+console.log("get value of d 3 times");
+console.log(d.value);
+console.log(d.value);
+console.log(d.value);
+
+b.value++; 
+
+await sm.waitForTasksToComplete();
+
+```
+
 
 #### `stateManager.stateExists(state_name)`
 
@@ -17,34 +78,15 @@ sm.createState("a", 1);
 #### `stateManager.getState(state_name)`
 > Returns the existing state object or false if not.
 
-#### `stateManager.getStateValue(state_name)`
-> Returns the value of existing state object or false if not.
-
-#### `setStateValueImmediately(state_name, newValue)`
-> Sets a value for the state immediately. 
-> Returns true or false.
-
-#### `setStateValue(state_name, newValue)`
-> Sets state's value in asynchronous mode. 
-> Returns true or false.
-
 #### `stateManager.subscribe(state_name, callback)`
 > Subscribes a callback to the data changes. Returns callback.
-
-```js
-let sm = new StateManager();
-
-sm.subscribe("a", (previousValue, newValue) => {
-    console.log("newValue: " + newValue, "previousValue: " + previousValue);
-});
-
-sm.setStateValue("a", 5);
-```
 
 #### `stateManager.unsubscribe(state_name, callback)`
 > Unsubscribes a callback.
 
 ```js
+import { StateManager } from "./js/StateManager.js";
+
 let sm = new StateManager();
 
 function callback(previousValue, newValue) {
@@ -52,20 +94,19 @@ function callback(previousValue, newValue) {
 }
 
 sm.subscribe("a", callback);
-sm.setStateValue("a", 5);
+
+let a = sm.getState("a");
+a.value = 5;
 
 await sm.waitForTasksToComplete();
-console.log(sm.getStateValue("a"));
+console.log(a.value);
 
 sm.unsubscribe("a", callback);
 
-sm.setStateValue("a", 6);
+a.value = 6;
 await sm.waitForTasksToComplete();
-console.log(sm.getStateValue("a"));
+console.log(a.value);
 ```
-
-#### `stateManager.unsubscribeAll(state_name)`
-> Unsubscribes all callbacks.
 
 #### `async sm.waitForTasksToComplete()`
 > Waits for batch state update to complete.
@@ -74,18 +115,17 @@ console.log(sm.getStateValue("a"));
 import { StateManager } from "./js/StateManager.js";
 
 let sm = new StateManager();
+let a = sm.createState(1);
+a.value = 2;
+a.value = 3;
+a.value = 4;
+a.value = 5;
 
-sm.createState("a", 1);
-sm.setStateValue("a", 2);
-sm.setStateValue("a", 3);
-sm.setStateValue("a", 4);
-sm.setStateValue("a", 5);
-
-console.log(sm.getStateValue("a"));
+console.log(a.value);
 // Outputs 1
 
 await sm.waitForTasksToComplete();
-console.log(sm.getStateValue("a"));
+console.log(a.value);
 // Outputs 5
 ```
 
@@ -123,18 +163,18 @@ import { StateManager } from "./js/StateManager.js";
 
 let sm = new StateManager();
 
-sm.on("batch", (updated_state_names) => {
-    console.log(`States are updated. a = ${a.getValue()}, b = ${b.getValue()}`);
+sm.on("batch", (updated_states) => {
+    let output = updated_states.map(state => `${state.name} = ${state.value}`).join(", ");
+    console.log(output);
 });
 
-let a = sm.createState();
-let b = sm.createState();
+let a = sm.createNamedState("a", 1);
+let b = sm.createNamedState("b", 1);
 
-a.setValue(2);
-a.setValue(3);
-b.setValue(10);
+a.value = 2;
+b.value = 10;
 
 await sm.waitForTasksToComplete();
-a.setValue(15);
-b.setValue(20);
+a.value = 15;
+b.value = 20;
 ```

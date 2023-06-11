@@ -10,15 +10,15 @@ import { StateManager } from "./js/StateManager.js";
 let sm = new StateManager();
 window.sm = sm;
 
-let a = sm.createState();
-let b = sm.createState();
+let a = sm.createState(1);
+let b = sm.createState(2);
 
 function compute_d() {
     console.log("compute value of d");
     return a.value + b.value;
 }
 
-let d = sm.createComputed(null, compute_d, [a, b]);
+let d = sm.createComputed(compute_d, [a, b]);
 
 function callback(previousValue, newValue) {
     console.log("d is changed", "newValue = " + newValue, "previousValue = " + previousValue);
@@ -43,12 +43,18 @@ await sm.waitForTasksToComplete();
 
 ```
 
+Also you can create a state with a name. 
+```js
+let d = sm.createNamedComputed(state_name, compute_d, [a, b]);
+```
+
+
 ### Properties
 #### `state.value`
 > State's value. Readonly. Uses the getter state.getValue.
 
 #### `state.name`
-> State's name (id). Readonly. The state's name can be set when creating the state.
+> State's name. Readonly. The state's name can be set when creating the state.
 
 
 ### Methods
@@ -91,22 +97,23 @@ import { StateManager } from "./js/StateManager.js";
 let sm = new StateManager();
 let states = sm.getProxy();
 
-let a = sm.createState("a");
-let b = sm.createState("b");
+sm.createNamedState("a", 1);
+sm.createNamedState("b", 2);
 
 function compute_d() {
-    console.log("compute value of d");
-    return a.value + b.value;
+    console.log("compute a value of d");
+    return states.a + states.b;
 }
 
-let d = sm.createComputed("d", compute_d, [a, b]);
+sm.createNamedComputed("d", compute_d, ["a", "b"]);
 
 function callback(previousValue, newValue) {
     console.log("d is changed", "newValue = " + newValue, "previousValue = " + previousValue);
 }
 
-d.subscribe(callback);
+sm.subscribe("d", callback);
 
+console.log(` a = `, states.a, ` b = `, states.b, ` d = `, states.d);
 
 states.a = 3;
 states.b = 2;

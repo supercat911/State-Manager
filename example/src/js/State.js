@@ -39,13 +39,13 @@ function observe(obj, state) {
     var proxy = new Proxy(obj, {
         deleteProperty: function (target, property) {
             delete target[property];
-            state.stateManager.addTask("update", state.getName());
+            state.stateManager.addTask("update", state.state_id);
 
             return true;
         },
         set: function (target, property, value, receiver) {
             target[property] = value;
-            state.stateManager.addTask("update", state.getName());
+            state.stateManager.addTask("update", state.state_id);
 
             return true;
         },
@@ -71,6 +71,7 @@ class State {
     stateManager = null
     name = null
     isComputed = false
+    state_id = 0
 
     constructor(name = null, value = null, stateManager = null) {
         this.#name = name;
@@ -204,7 +205,7 @@ class State {
         this.#dirtyValue = value;
 
         if (this.stateManager) {
-            this.stateManager.addTask("update", this.#name);
+            this.stateManager.addTask("update", this.state_id);
             return;
         }
 

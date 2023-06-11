@@ -4,12 +4,14 @@ A state object can be created with a StateManager instance.
 ```js
 import { StateManager } from "./js/StateManager.js";
 let sm = new StateManager();
-let myState = sm.createState();
+
+let init_value  = "123";
+
+let myState = sm.createState(init_value); 
 
 // also you can state name and initial value
 let state_name  = "myState2";
-let init_value  = "123";
-let myState2 = sm.createState(state_name, init_value); 
+let myState2 = sm.createNamedState(state_name, init_value); 
 
 ```
 
