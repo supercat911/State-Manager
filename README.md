@@ -12,12 +12,12 @@ import { StateManager } from "./js/StateManager.js";
 
 let sm = new StateManager();
 
-sm.on("batch", (updated_state_names) => {
+sm.on("batch", () => {
     console.log(`States are updated. a = ${a.value}, b = ${b.value}`);
 });
 
-let a = sm.createState();
-let b = sm.createState();
+let a = sm.createState(0);
+let b = sm.createState(0);
 
 a.subscribe((previousValue, newValue) => {
     console.log(
@@ -48,10 +48,10 @@ Outputs:
 ```
 > States are updated. a = 3, b = 10
 
-> a is changed. Current value is 3, previous value was null
+> a is changed. Current value is 3, previous value was 0
 a = 3, b = 10
 
-> b is changed. Current value is 10, previous value was null
+> b is changed. Current value is 10, previous value was 0
 a = 3, b = 10
 
 > States are updated. a = 15, b = 20
@@ -70,8 +70,8 @@ import { StateManager } from "./js/StateManager.js";
 
 let sm = new StateManager();
 
-let a = sm.createState();
-let b = sm.createState();
+let a = sm.createState(1);
+let b = sm.createState(2);
 
 function compute_d() {
     console.log("compute value of d");
@@ -82,7 +82,7 @@ function callback(previousValue, newValue) {
     console.log("d is changed", "newValue = " + newValue, "previousValue = " + previousValue);
 }
 
-let d = sm.createComputed(null, compute_d, [a, b]);
+let d = sm.createComputed(compute_d, [a, b]);
 d.subscribe(callback);
 
 a.value = 3;
@@ -154,15 +154,15 @@ import { StateManager } from "./js/StateManager.js";
 
 let sm = new StateManager();
 
-sm.on("batch", (updated_state_names) => {
+sm.on("batch", () => {
     console.log(`States are updated. a = ${a.value}, b = ${b.value}`);
 });
 
 let initValue = 1;
 
 // creates a state and sets a name (id) for the state 
-let a = sm.createState("a", initValue);
-let b = sm.createState("b", initValue);
+let a = sm.createNamedState("a", initValue);
+let b = sm.createNamedState("b", initValue);
 
 a.subscribe((previousValue, newValue, state) => {
     console.log(`${state.name} is changed. Current value is ${newValue}, previous value was ${previousValue}`);
@@ -191,6 +191,14 @@ b.value++;
 // console.log(a.value); // outputs "4"
 
 console.log(`Values: ${a.value}, ${b.value}`);
+```
+
+Outputs
+```
+> Values: 1, 4
+> States are updated. a = 2, b = 4
+> a is changed. Current value is 2, previous value was 1
+> b is changed. Current value is 4, previous value was 1
 ```
 
 Docs and examples you can find in "docs" folder. 
