@@ -2,7 +2,7 @@ import { StateManager } from "./js/StateManager.js";
 
 let sm = new StateManager();
 
-sm.on("batch", (updated_state_names) => {
+sm.on("batch", () => {
     console.log(`States are updated. a = ${a.value}, b = ${b.value}`);
 });
 
