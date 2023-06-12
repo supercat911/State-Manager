@@ -222,11 +222,13 @@ class StateManager extends EventEmitter {
                 let recomputeFlag = hasIntersection(this.#dependencies[state_id], changed_state_ids);
 
                 if (recomputeFlag) {
+
                     let updated = computed_state.recompute();
 
                     if (updated) {
                         changed_state_ids.push(computed_state.state_id);
                     }
+
                 }
 
             }
