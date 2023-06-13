@@ -1,19 +1,4 @@
-function compareObjects(a, b) {
-    if (a === b) return true;
-
-    if (typeof a != typeof b) return false;
-
-    if (Array.isArray(a)) {
-        return JSON.stringify(a) === JSON.stringify(b);
-    }
-
-    if (a === null || b === null) return false;
-    if (a === undefined || b === undefined) return false;
-
-    let a_json = JSON.stringify(a, Object.keys(a).sort());
-    let b_json = JSON.stringify(b, Object.keys(b).sort());
-    return a_json === b_json;
-}
+import { compareObjects } from "./Utils.js";
 
 class ComputedState {
     #value = null
@@ -21,17 +6,20 @@ class ComputedState {
     #name = ''
     name = ""
     state_id = 0
+    _alreadyComputed = false
 
     #getterFunction = null
     #listeners = []
     #previousValue = null
+    stateManager = null
 
-    constructor(name = null, getterFunction) {
+    constructor(name = null, getterFunction, stateManager) {
         this.#name = name;
         this.#value = null;
         this.#previousValue = null;
         this.#listeners = [];
         this.#getterFunction = getterFunction;
+        this.stateManager = stateManager;
 
         let that = this;
         Object.defineProperty(this, "value", {
@@ -77,6 +65,10 @@ class ComputedState {
         this.#listeners = [];
     }
 
+    hasSubscribers() {
+        return this.#listeners.length!=0;
+    }
+
     runSubscribers() {
         for (let i = 0; i < this.#listeners.length; i++) {
             let listener = this.#listeners[i];
@@ -90,6 +82,12 @@ class ComputedState {
     }
 
     getValue() {
+
+        if (this._alreadyComputed == false) {
+            this.recompute();
+            this._alreadyComputed = true;
+        }
+
         return this.#value;
     }
 
@@ -101,10 +99,18 @@ class ComputedState {
         let newValue = this.#getterFunction(this.#value);
 
         let updated = !compareObjects(this.#value, newValue);
+
         if (!updated) return false;
 
         this.#previousValue = this.#value;
         this.#value = Object.freeze(newValue);
+
+        if (this.stateManager) {
+            this.stateManager.addTask("update.computed", this.state_id);
+            return;
+        } else {
+            this.runSubscribers();
+        }
 
         return true; // updated
     }

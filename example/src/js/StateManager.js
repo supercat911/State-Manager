@@ -1,18 +1,8 @@
 import { EventEmitter } from "./EventEmitter.js";
 import { State } from "./State.js";
 import { ComputedState } from "./ComputedState.js";
+import {hasIntersection} from "./Utils.js";
 
-
-function hasIntersection(arr1 = [], arr2 = []) {
-
-    for (let i = 0; i < arr1.length; i++) {
-        if (arr2.includes(arr1[i])) {
-            return true;
-        }
-    }
-
-    return false;
-}
 
 class StateManager extends EventEmitter {
     delayMs = 16
@@ -21,6 +11,8 @@ class StateManager extends EventEmitter {
     #stateMap = new Map // <state_id, state> 
 
     #states_to_update = new Map()
+    #changed_state_ids = new Map()
+
     #setTimeoutId = 0
     #proxyObject = null
     #statesIndex = 0;
@@ -130,10 +122,11 @@ class StateManager extends EventEmitter {
             }
         });
 
-        let state = new ComputedState(state_name, getterFunction);
-        state.recompute();
-
+        let state = new ComputedState(state_name, getterFunction, this);
         this.#registerState(state, states_deps);
+
+        //state.recompute();
+
         return state;
     }
 
@@ -167,6 +160,11 @@ class StateManager extends EventEmitter {
 
         if (method == "update") {
             this.#states_to_update.set(state_id);
+            this.#changed_state_ids.set(state_id);
+        }
+
+        if (method == "update.computed") {
+            this.#changed_state_ids.set(state_id);
         }
 
         if (this.#setTimeoutId == 0) {
@@ -205,7 +203,10 @@ class StateManager extends EventEmitter {
 
         this.deleteAllTasks();
 
-        if (changed_state_ids.length == 0) return;
+        if (changed_state_ids.length == 0) {
+            this.#changed_state_ids.clear();
+            return
+        };
 
         // operate computed states
 
@@ -223,11 +224,19 @@ class StateManager extends EventEmitter {
 
                 if (recomputeFlag) {
 
-                    let updated = computed_state.recompute();
+                    changed_state_ids.push(computed_state.state_id);
 
-                    if (updated) {
-                        changed_state_ids.push(computed_state.state_id);
+                    computed_state._alreadyComputed = false;
+
+                    //console.log(`${computed_state.name}.hasSubscribers()`, computed_state.hasSubscribers());
+
+                    //*
+                    if (computed_state.hasSubscribers()) {
+                        //console.log(computed_state.name);
+                        computed_state.recompute();
+                        computed_state._alreadyComputed = true;
                     }
+                    //*/
 
                 }
 
@@ -241,6 +250,20 @@ class StateManager extends EventEmitter {
 
         this.emit('batch', all_updated_states);
 
+//        console.log(this.#changed_state_ids.keys());
+        
+        this.#changed_state_ids.forEach((value, state_id, map) => {
+
+            let state = this.getStateById(state_id);
+            //console.log(state_id);
+            //console.log(`state ${state.name}`);
+            state.runSubscribers();
+
+        });
+
+        this.#changed_state_ids.clear();
+
+        /*
         for (let i = 0; i < all_updated_states.length; i++) {
             let state = all_updated_states[i];
 
@@ -249,6 +272,7 @@ class StateManager extends EventEmitter {
             }
 
         }
+        */
 
 
     }
